@@ -1,0 +1,60 @@
+groups:
+- name: HttpAlerts
+  rules:
+  - alert: HttpNon200ResponseCode
+    expr: sum by (job, instance) (rate(drunk_detector_http_request_exceptions_total{code!~"200"}[1m])) > 0
+    for: 1m
+    labels:
+      severity: error
+    annotations:
+      summary: "Non-200 HTTP codes for job '{{ $labels.job }}'"
+      description: "Job '{{ $labels.job }}' on instance '{{ $labels.instance }}' is experiencing non-200 HTTP response codes. The current value is {{ $value }} requests per second."
+      runbook_url: "https://your-runbook-url/http-errors"
+
+  - alert: HighXValue
+    expr: increase(drunk_detector_data_quality_total{quality_rule="high_x_value"}[5m]) > 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High X-axis accelerometer value detected"
+
+  - alert: HighYValue
+    expr: increase(drunk_detector_data_quality_total{quality_rule="high_y_value"}[5m]) > 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Y-axis accelerometer value detected"
+
+  - alert: HighZValue
+    expr: increase(drunk_detector_data_quality_total{quality_rule="high_z_value"}[5m]) > 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High Z-axis accelerometer value detected"
+
+  - alert: MissingTimeField
+    expr: increase(drunk_detector_data_quality_total{quality_rule="missing_time_field"}[5m]) > 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: "API request missing required time field"
+
+  - alert: ArrayLengthMismatch
+    expr: increase(drunk_detector_data_quality_total{quality_rule="array_length_mismatch"}[5m]) > 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: "API request has mismatched array lengths"
+
+  - alert: DrunkDetectorDrift
+    expr: drunk_detector_psi_s > 0.4
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Dist. drift detected"

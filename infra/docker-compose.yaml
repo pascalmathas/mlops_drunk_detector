@@ -1,0 +1,117 @@
+services:
+
+  training:
+    image: drunk-detector:latest
+    command: python src/pipeline.py --preprocess --feat-eng --training
+    env_file:
+      - ../.env
+    depends_on:
+      mlflow:
+        condition: service_healthy
+
+  app:
+    image: drunk-detector:latest
+    command: flask --app src/api run --host 0.0.0.0 --port 5001
+    env_file:
+      - ../.env
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+      telemetry_job:
+        condition: service_started
+      training:
+        condition: service_completed_successfully
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: apt-get update -y && apt-get install -y curl && curl --fail http://localhost:5001/health || exit 1
+      retries: 5
+      interval: 30s
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.3.0rc0
+    command: mlflow server --host 0.0.0.0 --port 8080
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: apt-get update -y && apt-get install -y curl && curl --fail http://localhost:8080 || exit 1
+      retries: 3
+      interval: 5s
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    depends_on:
+      - prometheus_push_gateway
+    volumes:
+      - "./telemetry/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "./telemetry/alerts.yml:/etc/prometheus/alerts.yml"
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: wget http://localhost:9090/metrics -S -O - || exit 1
+      retries: 3
+      interval: 5s
+
+  prometheus_push_gateway:
+    image: prom/pushgateway:v1.11.1
+    ports:
+      - "9091:9091"
+    healthcheck:
+      test: wget http://localhost:9091/metrics -S -O - || exit 1
+      retries: 3
+      interval: 5s
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./telemetry/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    healthcheck:
+      test: wget -q --spider http://localhost:9093/-/healthy || exit 1
+      retries: 3
+      interval: 5s
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    depends_on:
+      - prometheus
+    environment:
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/default-dashboard.json
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      retries: 3
+      timeout: 5s
+
+  telemetry_job:
+    image: drunk-detector:latest
+    command: ["/bin/sh", "-c", "while true; do sleep 10; python src/drift_calculation.py ; done"]
+    depends_on:
+      - prometheus
+
+  airflow:
+    image: apache/airflow:3.1.0-python3.10
+    command: airflow standalone
+    ports:
+      - "4242:8080" 
+    environment:
+      - _AIRFLOW_DB_MIGRATE=true
+      - AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS=true
+    volumes:
+      - ./airflow/dags/:/opt/airflow/dags
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: wget http://localhost:8080/api/v2/monitor/health -o /dev/null || exit 1
+      retries: 3
+      interval: 5s
