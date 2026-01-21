@@ -52,6 +52,14 @@ Production-ready ML pipeline for detecting intoxication from smartphone accelero
         └───────────────────┘                                 └───────────────────┘
 ```
 
+## Screenshots
+
+![Airflow DAG](docs/screens/airflow.png)
+*Airflow DAG orchestrating the training pipeline*
+
+![Grafana Dashboard](docs/screens/grafana.png)
+*Grafana dashboard for model monitoring and metrics*
+
 ## Project Structure
 
 ```
