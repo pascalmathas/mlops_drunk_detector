@@ -7,50 +7,8 @@
 [![XGBoost](https://img.shields.io/badge/XGBoost-Classifier-FF6600.svg)](https://xgboost.ai/)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C.svg)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Grafana-Dashboard-F46800.svg)](https://grafana.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Production-ready ML pipeline for detecting intoxication from smartphone accelerometer data.
-
-## Architecture
-
-```
-        ┌─────────────────────────────────────────────────────────────────────────────┐
-        │                              Apache Airflow                                 │
-        │                         (DAG Orchestration :4242)                           │
-        └─────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                  ┌──────────────────────────┼──────────────────────────┐
-                  ▼                          ▼                          ▼
-          ┌─────────────┐           ┌─────────────┐           ┌─────────────┐
-          │ Preprocess  │     →     │  Feature    │     →     │   Train     │
-          │    Data     │           │ Engineering │           │   Model     │
-          └─────────────┘           └─────────────┘           └─────────────┘
-                                                                      │
-                                                                      ▼
-        ┌─────────────────────────────────────────────────────────────────────────────┐
-        │                          MLflow (:8080)                                     │
-        │                    (Model Registry & Artifacts)                             │
-        └─────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                                            ▼
-        ┌─────────────────────────────────────────────────────────────────────────────┐
-        │                          Flask API (:5001)                                  │
-        │                       (Prediction Service)                                  │
-        └─────────────────────────────────────────────────────────────────────────────┘
-                                            │
-                  ┌──────────────────────────┴──────────────────────────┐
-                  ▼                                                     ▼
-        ┌───────────────────┐                                 ┌───────────────────┐
-        │    Prometheus     │                                 │   Alertmanager    │
-        │     (:9090)       │────────────────────────────────▶│     (:9093)       │
-        └───────────────────┘                                 └───────────────────┘
-                  │                                                     │
-                  ▼                                                     ▼
-        ┌───────────────────┐                                 ┌───────────────────┐
-        │     Grafana       │                                 │  Webhook Alerts   │
-        │     (:3000)       │                                 │                   │
-        └───────────────────┘                                 └───────────────────┘
-```
 
 ## Screenshots
 
