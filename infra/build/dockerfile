@@ -1,0 +1,17 @@
+FROM python:3.13-slim-bullseye
+
+RUN apt-get update
+RUN apt-get install openjdk-17-jdk --yes
+
+WORKDIR /drunk_detector
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+ENV PYTHONPATH=/drunk_detector/
+
+COPY src/ src/
+COPY configs/ configs/
+COPY data/ data/
+COPY data/telemetry/ data/telemetry/
+COPY models/.gitkeep models/.gitkeep

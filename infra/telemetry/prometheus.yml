@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 2s
+  evaluation_interval: 2s
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+scrape_configs:
+ - job_name: prometheus
+   static_configs:
+    - targets:
+       - prometheus:9090
+ - job_name: drunk-detector
+   static_configs:
+     - targets:
+       - app:5001
+ - job_name: prometheus_push_gateway
+   honor_labels: true
+   static_configs:
+     - targets:
+       - prometheus_push_gateway:9091
+rule_files:
+  - "/etc/prometheus/alerts.yml"
